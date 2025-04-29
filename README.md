@@ -1,6 +1,6 @@
 ## domain_status_checker.py
 
-A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for IQ.PL and many other hosting providers' error/parked pages, as well as generic error codes.
+A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for hosting providers' error/parked pages, as well as generic error codes.
 
 ## Features
 
