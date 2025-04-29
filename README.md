@@ -1,4 +1,4 @@
-## domain_status_checker.py
+# Domain Status Checker
 
 A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for hosting providers' error/parked pages, as well as generic error codes.
 
