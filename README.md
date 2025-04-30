@@ -1,6 +1,6 @@
 # Domain Status Checker
 
-A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for hosting providers' error/parked pages, as well as generic error codes.
+A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for IQ.PL and many other hosting providers' error/parked pages, as well as generic error codes.
 
 ## Features
 
@@ -10,25 +10,31 @@ A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for
 - Supports dry-run mode (no HTTP requests).
 - Randomizes User-Agent for each request.
 - Retries failed requests with exponential backoff.
-- Outputs results in CSV, Markdown, and HTML formats.
+- Outputs results in CSV, Markdown, HTML, and optionally JSON formats.
 - Prints a colorized summary to the terminal and writes it to a summary file.
 - Handles Ctrl+C gracefully and supports resuming scans.
 - Handles exceptions when reading/writing files.
 - Skips and warns about invalid domains.
 - Allows output file paths as arguments.
 - Adjustable logging level for more detailed output.
-- **Automatically checks for and installs missing dependencies** (`requests`, `beautifulsoup4`, `colorama`).
+- **Automatically checks for and installs missing dependencies** (`requests`, `beautifulsoup4`, `colorama`, `tqdm`).
 - **Resume support:** If interrupted (Ctrl+C), the script saves progress and allows you to resume or start over on the next run.
 - **Each scan is saved in a timestamped results folder** to avoid overwriting previous results.
 - **Parallelization:** Use multiple threads for faster scanning (`--threads`).
 - **Externalized hosting patterns:** Use `--patterns` to provide a JSON file with custom error/parked page patterns.
 - **Logging to console:** Use `--log-console` to also log to the console.
+- **Progress bar:** Visual progress bar for scan progress.
+- **Skip delay:** Use `--no-delay` to skip delays between requests.
+- **Scan only unscanned domains:** Use `--only-unscanned` to skip domains already present in previous results.
+- **Output only errors:** Use `--errors-only` to only write domains with errors to output files.
+- **Limit domains:** Use `--max-domains N` to limit the number of domains scanned in one run.
+- **Configurable timeout and retries:** Use `--timeout` and `--retries` to control request behavior.
 - **Unit tests:** Provided for core functions.
 
 ## Usage
 
 ```bash
-python domain_status_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay-max N] [--csv FILE] [--md FILE] [--html FILE] [--log-level LEVEL] [--threads N] [--patterns FILE] [--log-console]
+python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay-max N] [--csv FILE] [--md FILE] [--html FILE] [--log-level LEVEL] [--threads N] [--patterns FILE] [--log-console] [--no-delay] [--only-unscanned] [--errors-only] [--max-domains N] [--json FILE] [--timeout N] [--retries N]
 ```
 
 ### Arguments
@@ -44,6 +50,13 @@ python domain_status_checker.py --input domains.txt [--dry-run] [--delay-min N] 
 - `--threads`: Number of parallel threads for scanning (default: 1).
 - `--patterns`: Path to a JSON file with custom hosting error/parked page patterns.
 - `--log-console`: Also log to the console.
+- `--no-delay`: Skip delay between requests (useful for testing).
+- `--only-unscanned`: Only scan domains not present in previous results.
+- `--errors-only`: Only output domains with errors (not `no_error`) to output files.
+- `--max-domains N`: Limit the number of domains to scan.
+- `--json FILE`: Output results in JSON format to the specified file.
+- `--timeout N`: Timeout for HTTP requests in seconds (default: 5).
+- `--retries N`: Number of retries for failed requests (default: 2).
 
 ## Output
 
@@ -51,6 +64,7 @@ python domain_status_checker.py --input domains.txt [--dry-run] [--delay-min N] 
 - CSV file with scan results (default: `scan_results.csv`).
 - Markdown table with scan results (default: `scan_results.md`).
 - HTML table with scan results (default: `scan_results.html`).
+- JSON file with scan results (if `--json` is specified).
 - Log file: `scan_log_<timestamp>.log`.
 - Progress file: `progress.json` (used for resuming scans; deleted after successful completion).
 - Summary file: `summary.txt` (with a summary of categories and counts).
@@ -65,6 +79,10 @@ python domain_status_checker.py --input domains.txt [--dry-run] [--delay-min N] 
 
 - Use the `--threads N` argument to scan domains in parallel (e.g., `--threads 4`).
 - Be careful with rate-limiting and server bans when using multiple threads.
+
+## Progress Bar
+
+- The script displays a progress bar for both single-threaded and multi-threaded scans using `tqdm`.
 
 ## Example
 
@@ -104,7 +122,7 @@ Domains in the input file are validated using a regular expression that allows s
 - Python 3.x
 
 **No manual installation of dependencies is required.**  
-The script will automatically check for and install `requests`, `beautifulsoup4`, and `colorama` if they are missing.
+The script will automatically check for and install `requests`, `beautifulsoup4`, `colorama`, and `tqdm` if they are missing.
 
 ## Unit Tests
 
