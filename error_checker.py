@@ -249,35 +249,127 @@ def scan_domain(domain, hosting_patterns, dry_run=False, retries=2, timeout=5):
 
 def write_csv(results, csv_file):
     try:
-        with open(csv_file, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=["domain", "status_code", "category"])
+        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+            # Write a comment header for context
+            f.write("# Domain scan results - domain,status_code,category\n")
+            writer = csv.DictWriter(f, fieldnames=["domain", "status_code", "category"], quoting=csv.QUOTE_ALL)
             writer.writeheader()
-            writer.writerows(results)
+            # Optionally, add a separator line for readability
+            f.write("#" + "-"*60 + "\n")
+            for row in results:
+                writer.writerow(row)
         logging.info(f"Results written to CSV: {csv_file}")
     except Exception as e:
         logging.error(f"Failed to write CSV file '{csv_file}': {e}")
         print(Fore.RED + f"Error writing CSV file '{csv_file}': {e}")
 
+def status_md_emoji(category):
+    # Use emoji or color-like cues for markdown
+    mapping = {
+        "no_error": "🟢",
+        "iq_error": "🟡",
+        "iq_parked": "🔵",
+        "custom": "🟣",
+        "custom_404": "🟡",
+        "custom_500": "🔴",
+        "custom_403": "🟠",
+        "custom_502": "🟠",
+        "custom_503": "🟠",
+        "unreachable": "⚫",
+        "dry_run": "⚪"
+    }
+    return mapping.get(category, "⚪")
+
 def write_md(results, md_file):
     try:
-        with open(md_file, 'w') as f:
-            f.write("| Domain | Status Code | Category |\n")
-            f.write("|--------|-------------|----------|\n")
+        # Summary by category
+        summary = Counter(r['category'] for r in results)
+        with open(md_file, 'w', encoding='utf-8') as f:
+            f.write("# Domain Scan Results\n\n")
+            f.write("## Summary\n\n")
+            f.write("| Category | Count |\n|---|---|\n")
+            for cat, count in summary.items():
+                f.write(f"| {status_md_emoji(cat)} `{cat}` | **{count}** |\n")
+            f.write("\n---\n\n")
+            f.write("## Detailed Results\n\n")
+            f.write("|  | Domain | Status Code | Category |\n")
+            f.write("|:-:|:-------|:-----------:|:---------|\n")
             for r in results:
-                f.write(f"| {r['domain']} | {r['status_code']} | {r['category']} |\n")
+                emoji = status_md_emoji(r['category'])
+                domain = f"`{r['domain']}`"
+                status = r['status_code'] if r['status_code'] is not None else "-"
+                cat = f"`{r['category']}`"
+                f.write(f"| {emoji} | {domain} | {status} | {cat} |\n")
         logging.info(f"Results written to Markdown: {md_file}")
     except Exception as e:
         logging.error(f"Failed to write Markdown file '{md_file}': {e}")
         print(Fore.RED + f"Error writing Markdown file '{md_file}': {e}")
 
+def html_row_color(category):
+    # Return a background color for each category
+    mapping = {
+        "no_error": "#e6ffe6",      # light green
+        "iq_error": "#fffbe6",      # light yellow
+        "iq_parked": "#e6f0ff",     # light blue
+        "custom": "#f3e6ff",        # light purple
+        "custom_404": "#fffbe6",    # light yellow
+        "custom_500": "#ffe6e6",    # light red
+        "custom_403": "#ffe6cc",    # light orange
+        "custom_502": "#ffe6cc",
+        "custom_503": "#ffe6cc",
+        "unreachable": "#f2f2f2",   # light gray
+        "dry_run": "#f9f9f9"
+    }
+    return mapping.get(category, "#ffffff")
+
 def write_html(results, html_file):
     try:
-        with open(html_file, 'w') as f:
-            f.write("<html><head><title>Scan Results</title></head><body><table border='1'>")
-            f.write("<tr><th>Domain</th><th>Status Code</th><th>Category</th></tr>")
+        with open(html_file, 'w', encoding='utf-8') as f:
+            f.write("""
+<html>
+<head>
+<title>Scan Results</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f8f8f8; }
+    table { border-collapse: collapse; width: 98%; margin: 1em auto; }
+    th, td { border: 1px solid #bbb; padding: 8px 12px; text-align: left; }
+    th { background: #222; color: #fff; }
+    tr:hover { background: #f1f1f1; }
+    .cat-no_error { background: #e6ffe6; }
+    .cat-iq_error, .cat-custom_404 { background: #fffbe6; }
+    .cat-iq_parked { background: #e6f0ff; }
+    .cat-custom_500 { background: #ffe6e6; }
+    .cat-custom_403, .cat-custom_502, .cat-custom_503 { background: #ffe6cc; }
+    .cat-unreachable { background: #f2f2f2; }
+    .cat-custom { background: #f3e6ff; }
+    .cat-dry_run { background: #f9f9f9; }
+    .emoji { font-size: 1.2em; }
+</style>
+</head>
+<body>
+<h2>Domain Scan Results</h2>
+<table>
+<tr>
+    <th></th>
+    <th>Domain</th>
+    <th>Status Code</th>
+    <th>Category</th>
+</tr>
+""")
             for r in results:
-                f.write(f"<tr><td>{r['domain']}</td><td>{r['status_code']}</td><td>{r['category']}</td></tr>")
-            f.write("</table></body></html>")
+                emoji = status_md_emoji(r['category'])
+                cat_class = f"cat-{r['category']}"
+                color = html_row_color(r['category'])
+                domain = r['domain']
+                status = r['status_code'] if r['status_code'] is not None else "-"
+                cat = r['category']
+                f.write(f"<tr class='{cat_class}' style='background:{color}'>"
+                        f"<td class='emoji'>{emoji}</td>"
+                        f"<td><code>{domain}</code></td>"
+                        f"<td>{status}</td>"
+                        f"<td><code>{cat}</code></td>"
+                        f"</tr>\n")
+            f.write("</table>\n</body>\n</html>")
         logging.info(f"Results written to HTML: {html_file}")
     except Exception as e:
         logging.error(f"Failed to write HTML file '{html_file}': {e}")
@@ -365,6 +457,7 @@ def main():
     parser.add_argument('--errors-only', action='store_true', help='Only output domains with errors (not no_error)')
     parser.add_argument('--max-domains', type=int, default=None, help='Limit the number of domains to scan')
     parser.add_argument('--json', default=None, help='Output JSON file path')
+    parser.add_argument('--pdf', default=None, help='Output PDF file path')
     parser.add_argument('--timeout', type=int, default=5, help='Timeout for HTTP requests (seconds)')
     parser.add_argument('--retries', type=int, default=2, help='Number of retries for failed requests')
     args = parser.parse_args()
@@ -381,6 +474,11 @@ def main():
     csv_path = os.path.join(results_dir, os.path.basename(args.csv))
     md_path = os.path.join(results_dir, os.path.basename(args.md))
     html_path = os.path.join(results_dir, os.path.basename(args.html))
+    # --- Always set a default PDF path if not provided ---
+    if args.pdf:
+        pdf_path = os.path.join(results_dir, os.path.basename(args.pdf))
+    else:
+        pdf_path = os.path.join(results_dir, "scan_results.pdf")
     progress_file = os.path.join(results_dir, "progress.json")
     summary_path = os.path.join(results_dir, "summary.txt")
 
@@ -487,6 +585,8 @@ def main():
     write_html(output_results, html_path)
     if args.json:
         write_json(output_results, os.path.join(results_dir, os.path.basename(args.json)))
+    # --- Always write PDF, using pdf_path ---
+    write_pdf(output_results, pdf_path)
     summarize_results(output_results, summary_file=summary_path)
 
     # Remove progress file after successful completion
