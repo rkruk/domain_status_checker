@@ -10,14 +10,14 @@ A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for
 - Supports dry-run mode (no HTTP requests).
 - Randomizes User-Agent for each request.
 - Retries failed requests with exponential backoff.
-- Outputs results in CSV, Markdown, HTML, and optionally JSON formats.
+- Outputs results in CSV, Markdown, HTML, **PDF**, and optionally JSON formats.
 - Prints a colorized summary to the terminal and writes it to a summary file.
 - Handles Ctrl+C gracefully and supports resuming scans.
 - Handles exceptions when reading/writing files.
 - Skips and warns about invalid domains.
 - Allows output file paths as arguments.
 - Adjustable logging level for more detailed output.
-- **Automatically checks for and installs missing dependencies** (`requests`, `beautifulsoup4`, `colorama`, `tqdm`).
+- **Automatically checks for and installs missing dependencies** (`requests`, `beautifulsoup4`, `colorama`, `tqdm`, `reportlab`).
 - **Resume support:** If interrupted (Ctrl+C), the script saves progress and allows you to resume or start over on the next run.
 - **Each scan is saved in a timestamped results folder** to avoid overwriting previous results.
 - **Parallelization:** Use multiple threads for faster scanning (`--threads`).
@@ -34,7 +34,7 @@ A script to scan a list of domains for HTTP errors (4xx/5xx), with detection for
 ## Usage
 
 ```bash
-python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay-max N] [--csv FILE] [--md FILE] [--html FILE] [--log-level LEVEL] [--threads N] [--patterns FILE] [--log-console] [--no-delay] [--only-unscanned] [--errors-only] [--max-domains N] [--json FILE] [--timeout N] [--retries N]
+python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay-max N] [--csv FILE] [--md FILE] [--html FILE] [--pdf FILE] [--log-level LEVEL] [--threads N] [--patterns FILE] [--log-console] [--no-delay] [--only-unscanned] [--errors-only] [--max-domains N] [--json FILE] [--timeout N] [--retries N]
 ```
 
 ### Arguments
@@ -46,6 +46,7 @@ python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay
 - `--csv`: Output CSV file path (default: `scan_results.csv`).
 - `--md`: Output Markdown file path (default: `scan_results.md`).
 - `--html`: Output HTML file path (default: `scan_results.html`).
+- `--pdf`: Output PDF file path (default: none; if set, generates a PDF table with the same formatting/colors as HTML).
 - `--log-level`: Set log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`; default: `INFO`).
 - `--threads`: Number of parallel threads for scanning (default: 1).
 - `--patterns`: Path to a JSON file with custom hosting error/parked page patterns.
@@ -58,12 +59,18 @@ python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay
 - `--timeout N`: Timeout for HTTP requests in seconds (default: 5).
 - `--retries N`: Number of retries for failed requests (default: 2).
 
+> **Note:**  
+> The PDF file is **not created by default**.  
+> To generate a PDF report, you must explicitly provide the `--pdf` argument (e.g. `--pdf scan_results.pdf`).  
+> If you do not specify `--pdf`, only CSV, Markdown, and HTML files will be created by default.
+
 ## Output
 
 - All results and logs are saved in a new folder named `scan_results_<timestamp>` for each scan.
 - CSV file with scan results (default: `scan_results.csv`).
 - Markdown table with scan results (default: `scan_results.md`).
 - HTML table with scan results (default: `scan_results.html`).
+- **PDF table with scan results (if `--pdf` is specified), with the same color-coding and emoji as the HTML output.**
 - JSON file with scan results (if `--json` is specified).
 - Log file: `scan_log_<timestamp>.log`.
 - Progress file: `progress.json` (used for resuming scans; deleted after successful completion).
@@ -86,17 +93,16 @@ python error_checker.py --input domains.txt [--dry-run] [--delay-min N] [--delay
 
 ## Example
 
-```
-| Domain         | Status Code | Category      |
-|----------------|-------------|--------------|
-| example.com    | 200         | no_error      |
-| test.com       | 404         | iq_error      |
-| parked.com     | 404         | iq_parked     |
-| custom.com     | 404         | custom_404    |
-| another.com    | 503         | custom_503    |
-| godaddy.com    | 404         | godaddy_error |
-| bad-domain.com | None        | unreachable   |
-```
+The output tables (Markdown, HTML, PDF) are color-coded and use emoji for quick visual scanning:
+
+|   | Domain         | Status Code | Category      |
+|:-:|:--------------|:-----------:|:-------------|
+| 🟢 | `example.com`    | 200         | `no_error`      |
+| 🟡 | `test.com`       | 404         | `iq_error`      |
+| 🔵 | `parked.com`     | 404         | `iq_parked`     |
+| 🟡 | `custom.com`     | 404         | `custom_404`    |
+| 🟠 | `another.com`    | 503         | `custom_503`    |
+| ⚫ | `bad-domain.com` | -           | `unreachable`   |
 
 ## Categories
 
@@ -130,7 +136,7 @@ pip install tqdm
 ```
 
 **No manual installation of other dependencies is required.**  
-The script will automatically check for and install `requests`, `beautifulsoup4`, and `colorama` if they are missing.  
+The script will automatically check for and install `requests`, `beautifulsoup4`, `colorama`, and `reportlab` if they are missing.  
 However, for `tqdm`, you may need to install it manually in your virtual environment as shown above.
 
 ## Unit Tests
