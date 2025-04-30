@@ -121,8 +121,17 @@ Domains in the input file are validated using a regular expression that allows s
 
 - Python 3.x
 
-**No manual installation of dependencies is required.**  
-The script will automatically check for and install `requests`, `beautifulsoup4`, `colorama`, and `tqdm` if they are missing.
+**If you are using a system with an "externally managed environment" (such as Ubuntu 22.04+ or Debian 12+), you may not be able to install Python packages system-wide using pip. In this case, you should use a Python virtual environment:**
+
+```bash
+python3 -m venv myenv
+source myenv/bin/activate
+pip install tqdm
+```
+
+**No manual installation of other dependencies is required.**  
+The script will automatically check for and install `requests`, `beautifulsoup4`, and `colorama` if they are missing.  
+However, for `tqdm`, you may need to install it manually in your virtual environment as shown above.
 
 ## Unit Tests
 
